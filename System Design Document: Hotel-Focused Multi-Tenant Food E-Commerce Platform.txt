@@ -1,0 +1,271 @@
+System Design Document: Hotel-Focused Multi-Tenant Food E-Commerce Platform
+1. Recommended Tech Stack
+
+Justification: The choice of stack prioritizes rapid development for the MVP (Minimum Viable Product) for the founding hotel, while ensuring a robust foundation for the future multi-tenant SaaS platform. We favor JavaScript/TypeScript across the board for developer efficiency, a massive community, and cost-effectiveness.
+
+Frontend:
+
+Next.js (React Framework): The premier choice. It enables both client-side rendering for a dynamic app-like feel and server-side rendering for superior SEO and initial page load speed.
+
+State Management: Context API or Zustand (lighter and simpler than Redux for most use cases).
+
+UI Library: Chakra UI or Ant Design. Provides pre-built, accessible, and professional components to accelerate development.
+
+Mobile: The initial focus will be a Responsive Web App (PWA). This avoids the cost and complexity of maintaining separate iOS/Android codebases initially. A native React Native app can be developed once product-market fit is proven.
+
+Backend:
+
+Node.js with Express.js (TypeScript): Unifies the language across the stack, allowing for code sharing and a simpler hiring pool. TypeScript adds essential type safety for a large, complex backend.
+
+Authentication: Auth0 or Clerk. For a startup, outsourcing complex, security-critical systems like auth is cost-effective and secure. It handles the entire "pyramid" role system seamlessly.
+
+API: RESTful API design initially, with the potential to introduce GraphQL for specific, complex frontend data requirements (e.g., the analytics dashboard).
+
+Database:
+
+Primary Database: PostgreSQL. A strong, open-source relational database. It is a better fit than MongoDB for the complex transactions, relationships (e.g., Orders to OrderItems), and data integrity required in e-commerce. Its JSONB support allows for flexibility where needed.
+
+Caching & Session Store: Redis. For storing session data, caching frequently accessed data (e.g., menu items, restaurant profiles), and managing rate-limiting queues.
+
+Third-Party Services:
+
+Payments: M-Pesa API is non-negotiable for the Kenyan market. Integrate it alongside a card processor like Stripe for international customers.
+
+Cloud & Deployment:
+
+Vercel: For hosting the Next.js frontend. Seamless integration and fantastic performance.
+
+Heroku / Railway / DigitalOcean App Platform: For the backend API. These Platform-as-a-Service (PaaS) options abstract away server management, perfect for a startup.
+
+AWS S3 / Cloudinary: For storing and optimizing menu item images.
+
+2. High-Level System Architecture Diagram (Textual Description)
+
+text
++-----------------------------------------------------------------------------------------+
+|                                  CLIENT LAYER                                           |
+|  +---------------------+  +---------------------+  +---------------------+              |
+|  |   Customer Web App  |  | Hotel Staff Dashboard|  | Super Admin Portal  |              |
+|  |     (Next.js PWA)   |  |     (Next.js)       |  |      (Next.js)      |              |
+|  +---------------------+  +---------------------+  +---------------------+              |
++------------↑--------------------------↑---------------------------↑---------------------+
+             |                          |                           |
+             | (HTTP/S - API Calls)     |                           |
++------------|--------------------------|---------------------------|---------------------+
+|                                  APPLICATION LAYER                                      |
+|  +------------------------------------+  +---------------------------------------------+ |
+|  |          API GATEWAY               |  |             AUTH SERVICE                   | |
+|  |        (Express.js Server)         |  |              (Auth0/Clerk)                 | |
+|  +------------------------------------+  +---------------------------------------------+ |
+|            ↑                          |                           |                   |
+|            |                          |                           |                   |
++------------|--------------------------|---------------------------|---------------------+
+             | (Internal Microservices Communication) |             |
++------------|------+  +----------------|----------+  +-------------|------+  +----------|-----+
+|   ORDER Service   |  |   MENU Service           |  |  PAYMENT Service   |  | ANALYTICS Service|
+|                   |  |                          |  |                    |  |                 |
++-------------------+  +---------------------------+  +--------------------+  +-----------------+
+             |                          |                           |
++------------|--------------------------|---------------------------|---------------------+
+|                                  DATA LAYER                                            |
+|  +-------------------+  +--------------------------+  +-----------------------------+   |
+|  |   PostgreSQL      |  |         Redis            |  |         AWS S3/Cloudinary   |   |
+|  |   (Primary DB)    |  | (Cache & Sessions)       |  |      (Image Storage)        |   |
+|  +-------------------+  +--------------------------+  +-----------------------------+   |
++------------↑------------------------------------------------------------↑---------------+
+             |                                                            |
++------------|------------------------------------------------------------|---------------+
+|                                  EXTERNAL SERVICES LAYER                               |
+|  +-------------------+          +-------------------+    +--------------------------+  |
+|  |     M-Pesa API    |          |    Stripe API     |    |     SMS/Email Service    |  |
+|  |                   |          |                   |    |     (Twilio/SendGrid)    |  |
+|  +-------------------+          +-------------------+    +--------------------------+  |
++-----------------------------------------------------------------------------------------+
+3. Core Module List
+
+User & Access Management Module
+
+Multi-tier Authentication & Authorization (Customer, Admin, Manager, Super Admin)
+
+Profile Management
+
+Session Management
+
+Multi-Tenancy & Hotel Management Module (SaaS Core)
+
+White-label Branding (Logos, Colors, Domains)
+
+Tenant (Hotel) Onboarding & Configuration
+
+Billing & Subscription Management (for future SaaS)
+
+Menu & Catalog Management Module
+
+Category & Item Management
+
+Dynamic Pricing & Discounts (Happy Hour, Promos)
+
+Inventory & Stock Level Tracking
+
+Image Management
+
+Order Processing & Fulfillment Module
+
+Shopping Cart
+
+Checkout (Dine-in, Takeaway, Delivery)
+
+Order Lifecycle Management (Pending, Confirmed, Preparing, Ready, Completed, Cancelled)
+
+Kitchen Display System (KDS) Interface for the hotel staff
+
+Payment Integration Module
+
+M-Pesa (STK Push) Integration
+
+Card Payment (Stripe) Integration
+
+Payment Status Reconciliation & Webhook Handling
+
+Delivery Management Module (Optional for Start, but Plan)
+
+Delivery Zone Configuration
+
+In-house vs. 3rd Party Delivery Logic
+
+Simple Delivery Tracking (Status updates for customer)
+
+Notification & Communication Module
+
+Order Status SMS/WhatsApp Alerts (via Twilio)
+
+Email Receipts & Promotions (via SendGrid)
+
+In-App Notifications
+
+Analytics & Reporting Dashboard
+
+Super Admin: Platform-wide metrics, tenant performance.
+
+Hotel Manager: Sales reports, popular items, customer insights.
+
+Key Metrics: Revenue, Order Volume, Average Order Value (AOV), Customer Lifetime Value (CLV).
+
+4. Data Model Sketch
+
+Here are the core entities. Each table belonging to a specific hotel (tenant) will include a tenant_id for data isolation in the SaaS model.
+
+tenants (The core of the SaaS model)
+
+id (UUID, Primary Key)
+
+name (e.g., "The Founding Hotel Nairobi")
+
+slug (e.g., "founding-hotel")
+
+config (JSONB - for branding colors, logo URL, etc.)
+
+subscription_plan
+
+is_active
+
+users
+
+id (UUID, Primary Key)
+
+tenant_id (Foreign Key to tenants)
+
+auth_provider_id (Links to Auth0/Clerk)
+
+email
+
+role ('customer', 'admin', 'manager', 'super_admin')
+
+profile (JSONB - phone, address, dietary preferences)
+
+restaurants (In this model, each tenant has one or more restaurants/outlets)
+
+id (UUID, Primary Key)
+
+tenant_id (Foreign Key)
+
+name
+
+address
+
+contact_phone
+
+delivery_zones (JSONB - defines geographies for delivery)
+
+menu_categories
+
+id (UUID, Primary Key)
+
+tenant_id (Foreign Key)
+
+name (e.g., "Breakfast", "Grills")
+
+description
+
+sort_order
+
+menu_items
+
+id (UUID, Primary Key)
+
+tenant_id (Foreign Key)
+
+category_id (Foreign Key)
+
+name
+
+description
+
+price
+
+image_url
+
+is_available
+
+inventory_count
+
+orders
+
+id (UUID, Primary Key)
+
+tenant_id (Foreign Key)
+
+user_id (Foreign Key - can be null for guest checkout)
+
+order_number (Human-readable, e.g., "FHN-00123")
+
+status ('pending', 'confirmed', 'preparing', 'ready', 'completed', 'cancelled')
+
+order_type ('dine-in', 'takeaway', 'delivery')
+
+total_amount
+
+delivery_address (JSONB)
+
+mpesa_receipt_number / stripe_payment_intent_id
+
+timestamps (created_at, updated_at)
+
+order_items
+
+id (UUID, Primary Key)
+
+order_id (Foreign Key)
+
+menu_item_id (Foreign Key)
+
+quantity
+
+unit_price (Snapshotted at time of order)
+
+Strategic Implementation Roadmap (Phased Approach)
+Phase 1: MVP for Founding Hotel: Build a monolithic application focusing on the core Customer -> Menu -> Order -> M-Pesa flow. Use role-based access for the hotel's Admin and Staff. Goal: Validate the business model and increase the hotel's sales.
+
+Phase 2: Refactor for Multi-Tenancy: Introduce the tenants table and refactor all data access to be scoped by tenant_id. Build the basic Super Admin portal to view tenants. Goal: Prepare the codebase for the first external hotel client.
+
+Phase 3: Launch SaaS & Advanced Features: Build the public onboarding flow, subscription billing, and white-labeling features. Introduce the advanced Analytics Dashboard. Goal: Begin actively selling the platform to other hotels in Nairobi and beyond.
