@@ -71,6 +71,26 @@ npm start
 cd ../frontend && npm start
 ---
 
+# PREVIEW OF THE WEBSITE:
+### The Landing page
+<img width="1345" height="950" alt="image" src="https://github.com/user-attachments/assets/1f54c319-1be0-4e07-b235-5d6f3b3c98e0" />
+
+### Aweseome Menu Page
+<img width="1321" height="946" alt="image" src="https://github.com/user-attachments/assets/8357ec02-f142-4c8d-831a-e60fadfdacf0" />
+
+### Login and Sign Up page
+<img width="1393" height="818" alt="image" src="https://github.com/user-attachments/assets/3a0193da-03fe-486d-aa01-8d37ea442abf" />
+
+### Cart Page - Where customers place their orders
+<img width="1393" height="876" alt="image" src="https://github.com/user-attachments/assets/76d2515f-83ef-43dc-93bf-d6cce49ca278" />
+
+### Track Your Order Page
+<img width="1325" height="936" alt="image" src="https://github.com/user-attachments/assets/96378fec-43e5-4ece-a98c-512ca3614530" />
+
+## And 50 much m0r3!!! :)
+
+---
+
 # **REVENUE STRATEGY: SCALING TO "CRAZY MASSIVE INCOME!!!"**
 
 ## **Executive Summary**
