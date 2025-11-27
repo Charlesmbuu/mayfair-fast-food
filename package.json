@@ -1,0 +1,18 @@
+{
+  "name": "mayfair-fast-food",
+  "version": "1.0.0",
+  "description": "Complete food delivery system for May Fair Fast Food",
+  "scripts": {
+    "setup-project": "node scripts/setup-project.js",
+    "dev": "concurrently \"cd backend && npm run dev\" \"cd frontend && npm start\"",
+    "start": "cd backend && npm start",
+    "build": "cd frontend && npm run build",
+    "install-all": "cd backend && npm install && cd ../frontend && npm install"
+  },
+  "keywords": ["food", "delivery", "ecommerce", "react", "node"],
+  "author": "May Fair Fast Food",
+  "license": "MIT",
+  "devDependencies": {
+    "concurrently": "^8.2.0"
+  }
+}

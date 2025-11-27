@@ -1,0 +1,592 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>May Fair Fast Food</title>
+    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://unpkg.com/react-router-dom@6/dist/umd/react-router-dom.development.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .loading-spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #FF6B35;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 2s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .food-card:hover {
+            transform: translateY(-5px);
+            transition: transform 0.2s ease-in-out;
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, createContext, useContext } = React;
+        const { BrowserRouter, Routes, Route, Link, useNavigate } = ReactRouterDOM;
+
+        // Simple API service
+        const API_URL = 'http://localhost:5000/api';
+
+        // Auth Context
+        const AuthContext = createContext();
+
+        const AuthProvider = ({ children }) => {
+            const [user, setUser] = useState(null);
+            const [loading, setLoading] = useState(true);
+
+            useEffect(() => {
+                const token = localStorage.getItem('token');
+                if (token) {
+                    fetchUser();
+                } else {
+                    setLoading(false);
+                }
+            }, []);
+
+            const fetchUser = async () => {
+                try {
+                    const response = await fetch(`${API_URL}/auth/me`, {
+                        headers: {
+                            'Authorization': `Bearer ${localStorage.getItem('token')}`
+                        }
+                    });
+                    const data = await response.json();
+                    if (data.success) {
+                        setUser(data.user);
+                    }
+                } catch (error) {
+                    console.error('Error fetching user:', error);
+                } finally {
+                    setLoading(false);
+                }
+            };
+
+            const login = async (email, password) => {
+                try {
+                    const response = await fetch(`${API_URL}/auth/login`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({ email, password })
+                    });
+                    const data = await response.json();
+                    
+                    if (data.success) {
+                        localStorage.setItem('token', data.token);
+                        setUser(data.user);
+                        return { success: true, user: data.user };
+                    } else {
+                        return { success: false, message: data.message };
+                    }
+                } catch (error) {
+                    return { success: false, message: 'Login failed' };
+                }
+            };
+
+            const logout = () => {
+                localStorage.removeItem('token');
+                setUser(null);
+            };
+
+            return (
+                <AuthContext.Provider value={{ user, login, logout, loading }}>
+                    {children}
+                </AuthContext.Provider>
+            );
+        };
+
+        const useAuth = () => useContext(AuthContext);
+
+        // Cart Context
+        const CartContext = createContext();
+
+        const CartProvider = ({ children }) => {
+            const [cartItems, setCartItems] = useState([]);
+
+            const addToCart = (item) => {
+                setCartItems(prev => {
+                    const existing = prev.find(i => i.id === item.id);
+                    if (existing) {
+                        return prev.map(i => 
+                            i.id === item.id ? { ...i, quantity: i.quantity + 1 } : i
+                        );
+                    }
+                    return [...prev, { ...item, quantity: 1 }];
+                });
+            };
+
+            const removeFromCart = (itemId) => {
+                setCartItems(prev => prev.filter(item => item.id !== itemId));
+            };
+
+            const updateQuantity = (itemId, quantity) => {
+                if (quantity < 1) {
+                    removeFromCart(itemId);
+                    return;
+                }
+                setCartItems(prev => 
+                    prev.map(item => 
+                        item.id === itemId ? { ...item, quantity } : item
+                    )
+                );
+            };
+
+            const getCartTotal = () => {
+                return cartItems.reduce((total, item) => total + (item.price * item.quantity), 0);
+            };
+
+            const getCartCount = () => {
+                return cartItems.reduce((total, item) => total + item.quantity, 0);
+            };
+
+            return (
+                <CartContext.Provider value={{
+                    cartItems,
+                    addToCart,
+                    removeFromCart,
+                    updateQuantity,
+                    getCartTotal,
+                    getCartCount
+                }}>
+                    {children}
+                </CartContext.Provider>
+            );
+        };
+
+        const useCart = () => useContext(CartContext);
+
+        // Components
+        const Header = () => {
+            const { user, logout } = useAuth();
+            const { getCartCount } = useCart();
+            const navigate = useNavigate();
+
+            return (
+                <header className="bg-white shadow-sm border-b">
+                    <div className="max-w-7xl mx-auto px-4 py-4">
+                        <div className="flex justify-between items-center">
+                            <Link to="/" className="flex items-center space-x-2">
+                                <div className="w-10 h-10 bg-orange-500 rounded-full flex items-center justify-center">
+                                    <span className="text-white font-bold">M</span>
+                                </div>
+                                <div>
+                                    <h1 className="text-xl font-bold">May Fair Fast Food</h1>
+                                    <p className="text-xs text-gray-500">Manyanja Road, Nairobi</p>
+                                </div>
+                            </Link>
+                            
+                            <nav className="flex items-center space-x-6">
+                                <Link to="/" className="text-gray-700 hover:text-orange-500">Home</Link>
+                                <Link to="/menu" className="text-gray-700 hover:text-orange-500">Menu</Link>
+                                
+                                <Link to="/cart" className="relative text-gray-700 hover:text-orange-500">
+                                    🛒
+                                    {getCartCount() > 0 && (
+                                        <span className="absolute -top-2 -right-2 bg-orange-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
+                                            {getCartCount()}
+                                        </span>
+                                    )}
+                                </Link>
+                                
+                                {user ? (
+                                    <div className="flex items-center space-x-4">
+                                        <span>Hello, {user.name}</span>
+                                        <button 
+                                            onClick={logout}
+                                            className="bg-gray-200 px-3 py-1 rounded hover:bg-gray-300"
+                                        >
+                                            Logout
+                                        </button>
+                                    </div>
+                                ) : (
+                                    <div className="flex space-x-2">
+                                        <Link to="/login" className="px-3 py-1 text-gray-700 hover:text-orange-500">Login</Link>
+                                        <Link to="/register" className="px-3 py-1 bg-orange-500 text-white rounded hover:bg-orange-600">Sign Up</Link>
+                                    </div>
+                                )}
+                            </nav>
+                        </div>
+                    </div>
+                </header>
+            );
+        };
+
+        const Home = () => {
+            return (
+                <div>
+                    {/* Hero Section */}
+                    <section className="bg-gradient-to-r from-orange-500 to-orange-600 text-white py-20">
+                        <div className="max-w-4xl mx-auto text-center">
+                            <h1 className="text-5xl font-bold mb-6">Welcome to May Fair Fast Food</h1>
+                            <p className="text-xl mb-8">Delicious meals delivered fast to your doorstep in Nairobi</p>
+                            <Link to="/menu" className="bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-8 rounded-lg text-lg">
+                                Order Now
+                            </Link>
+                        </div>
+                    </section>
+
+                    {/* Features */}
+                    <section className="py-16 bg-white">
+                        <div className="max-w-6xl mx-auto text-center">
+                            <h2 className="text-3xl font-bold mb-12">Why Choose May Fair?</h2>
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                                <div className="p-6">
+                                    <div className="w-16 h-16 bg-orange-500 rounded-full flex items-center justify-center mx-auto mb-4">
+                                        ⚡
+                                    </div>
+                                    <h3 className="text-xl font-semibold mb-2">Fast Delivery</h3>
+                                    <p className="text-gray-600">30-45 minute delivery across Nairobi</p>
+                                </div>
+                                <div className="p-6">
+                                    <div className="w-16 h-16 bg-green-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                                        🌱
+                                    </div>
+                                    <h3 className="text-xl font-semibold mb-2">Fresh Ingredients</h3>
+                                    <p className="text-gray-600">Quality ingredients in every meal</p>
+                                </div>
+                                <div className="p-6">
+                                    <div className="w-16 h-16 bg-orange-500 rounded-full flex items-center justify-center mx-auto mb-4">
+                                        💝
+                                    </div>
+                                    <h3 className="text-xl font-semibold mb-2">Best Service</h3>
+                                    <p className="text-gray-600">Friendly staff ready to serve you</p>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+                </div>
+            );
+        };
+
+        const Menu = () => {
+            const [menuItems, setMenuItems] = useState([]);
+            const [loading, setLoading] = useState(true);
+            const { addToCart } = useCart();
+
+            useEffect(() => {
+                fetchMenu();
+            }, []);
+
+            const fetchMenu = async () => {
+                try {
+                    const response = await fetch(`${API_URL}/menu`);
+                    const data = await response.json();
+                    if (data.success) {
+                        setMenuItems(data.data);
+                    }
+                } catch (error) {
+                    console.error('Error fetching menu:', error);
+                } finally {
+                    setLoading(false);
+                }
+            };
+
+            if (loading) {
+                return (
+                    <div className="min-h-screen flex items-center justify-center">
+                        <div className="loading-spinner"></div>
+                    </div>
+                );
+            }
+
+            return (
+                <div className="min-h-screen py-8">
+                    <div className="max-w-6xl mx-auto px-4">
+                        <h1 className="text-4xl font-bold text-center mb-12">Our Menu</h1>
+                        
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                            {menuItems.map(item => (
+                                <div key={item.id} className="bg-white rounded-lg shadow-md overflow-hidden food-card">
+                                    <div className="h-40 bg-gradient-to-r from-orange-400 to-orange-500 flex items-center justify-center">
+                                        <span className="text-white text-2xl">🍔</span>
+                                    </div>
+                                    <div className="p-6">
+                                        <h3 className="text-xl font-semibold mb-2">{item.name}</h3>
+                                        <p className="text-gray-600 mb-4">{item.description}</p>
+                                        <div className="flex justify-between items-center">
+                                            <span className="text-2xl font-bold text-orange-500">KES {item.price}</span>
+                                            <button
+                                                onClick={() => addToCart(item)}
+                                                className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded"
+                                            >
+                                                Add to Cart
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        const Cart = () => {
+            const { cartItems, updateQuantity, removeFromCart, getCartTotal } = useCart();
+            const { user } = useAuth();
+            const navigate = useNavigate();
+
+            if (cartItems.length === 0) {
+                return (
+                    <div className="min-h-screen flex items-center justify-center">
+                        <div className="text-center">
+                            <h2 className="text-2xl font-bold mb-4">Your cart is empty</h2>
+                            <p className="text-gray-600 mb-8">Add some delicious items from our menu!</p>
+                            <Link to="/menu" className="bg-orange-500 hover:bg-orange-600 text-white px-6 py-3 rounded-lg">
+                                Browse Menu
+                            </Link>
+                        </div>
+                    </div>
+                );
+            }
+
+            return (
+                <div className="min-h-screen py-8">
+                    <div className="max-w-4xl mx-auto px-4">
+                        <h1 className="text-3xl font-bold mb-8">Shopping Cart</h1>
+                        
+                        <div className="bg-white rounded-lg shadow-md p-6">
+                            {cartItems.map(item => (
+                                <div key={item.id} className="flex items-center justify-between py-4 border-b">
+                                    <div>
+                                        <h3 className="font-semibold">{item.name}</h3>
+                                        <p className="text-orange-500 font-bold">KES {item.price}</p>
+                                    </div>
+                                    <div className="flex items-center space-x-4">
+                                        <div className="flex items-center space-x-2">
+                                            <button 
+                                                onClick={() => updateQuantity(item.id, item.quantity - 1)}
+                                                className="w-8 h-8 bg-gray-200 rounded"
+                                            >-</button>
+                                            <span>{item.quantity}</span>
+                                            <button 
+                                                onClick={() => updateQuantity(item.id, item.quantity + 1)}
+                                                className="w-8 h-8 bg-gray-200 rounded"
+                                            >+</button>
+                                        </div>
+                                        <button 
+                                            onClick={() => removeFromCart(item.id)}
+                                            className="text-red-500 hover:text-red-700"
+                                        >Remove</button>
+                                    </div>
+                                </div>
+                            ))}
+                            
+                            <div className="mt-6 pt-6 border-t">
+                                <div className="flex justify-between items-center mb-4">
+                                    <span className="text-xl font-semibold">Total:</span>
+                                    <span className="text-2xl font-bold text-orange-500">KES {getCartTotal()}</span>
+                                </div>
+                                
+                                <button 
+                                    onClick={() => user ? navigate('/checkout') : navigate('/login')}
+                                    className="w-full bg-orange-500 hover:bg-orange-600 text-white py-3 rounded-lg font-semibold"
+                                >
+                                    {user ? 'Proceed to Checkout' : 'Login to Checkout'}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        const Login = () => {
+            const [email, setEmail] = useState('');
+            const [password, setPassword] = useState('');
+            const [loading, setLoading] = useState(false);
+            const { login } = useAuth();
+            const navigate = useNavigate();
+
+            const handleSubmit = async (e) => {
+                e.preventDefault();
+                setLoading(true);
+                
+                const result = await login(email, password);
+                if (result.success) {
+                    navigate('/');
+                } else {
+                    alert(result.message);
+                }
+                setLoading(false);
+            };
+
+            return (
+                <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4">
+                    <div className="max-w-md w-full bg-white rounded-lg shadow-md p-8">
+                        <h2 className="text-3xl font-bold text-center mb-8">Sign In</h2>
+                        
+                        <form onSubmit={handleSubmit} className="space-y-6">
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700">Email</label>
+                                <input
+                                    type="email"
+                                    value={email}
+                                    onChange={(e) => setEmail(e.target.value)}
+                                    className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-orange-500 focus:border-orange-500"
+                                    required
+                                />
+                            </div>
+                            
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700">Password</label>
+                                <input
+                                    type="password"
+                                    value={password}
+                                    onChange={(e) => setPassword(e.target.value)}
+                                    className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-orange-500 focus:border-orange-500"
+                                    required
+                                />
+                            </div>
+                            
+                            <button
+                                type="submit"
+                                disabled={loading}
+                                className="w-full bg-orange-500 hover:bg-orange-600 text-white py-3 rounded-md font-semibold disabled:opacity-50"
+                            >
+                                {loading ? 'Signing in...' : 'Sign In'}
+                            </button>
+                        </form>
+
+                        <div className="mt-6 p-4 bg-yellow-50 rounded-md">
+                            <h3 className="font-semibold mb-2">Demo Credentials:</h3>
+                            <p className="text-sm">Admin: admin@mayfair.com / admin123</p>
+                            <p className="text-sm">Customer: customer@example.com / customer123</p>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        const Register = () => {
+            const [formData, setFormData] = useState({
+                name: '',
+                email: '',
+                password: '',
+                phone: '',
+                address: ''
+            });
+            const navigate = useNavigate();
+
+            const handleSubmit = async (e) => {
+                e.preventDefault();
+                try {
+                    const response = await fetch(`${API_URL}/auth/register`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify(formData)
+                    });
+                    const data = await response.json();
+                    
+                    if (data.success) {
+                        localStorage.setItem('token', data.token);
+                        navigate('/');
+                    } else {
+                        alert(data.message);
+                    }
+                } catch (error) {
+                    alert('Registration failed');
+                }
+            };
+
+            return (
+                <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4">
+                    <div className="max-w-md w-full bg-white rounded-lg shadow-md p-8">
+                        <h2 className="text-3xl font-bold text-center mb-8">Create Account</h2>
+                        
+                        <form onSubmit={handleSubmit} className="space-y-4">
+                            <input
+                                type="text"
+                                placeholder="Full Name"
+                                value={formData.name}
+                                onChange={(e) => setFormData({...formData, name: e.target.value})}
+                                className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-orange-500 focus:border-orange-500"
+                                required
+                            />
+                            <input
+                                type="email"
+                                placeholder="Email"
+                                value={formData.email}
+                                onChange={(e) => setFormData({...formData, email: e.target.value})}
+                                className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-orange-500 focus:border-orange-500"
+                                required
+                            />
+                            <input
+                                type="password"
+                                placeholder="Password"
+                                value={formData.password}
+                                onChange={(e) => setFormData({...formData, password: e.target.value})}
+                                className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-orange-500 focus:border-orange-500"
+                                required
+                            />
+                            <input
+                                type="tel"
+                                placeholder="Phone Number"
+                                value={formData.phone}
+                                onChange={(e) => setFormData({...formData, phone: e.target.value})}
+                                className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-orange-500 focus:border-orange-500"
+                                required
+                            />
+                            <textarea
+                                placeholder="Delivery Address"
+                                value={formData.address}
+                                onChange={(e) => setFormData({...formData, address: e.target.value})}
+                                className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-orange-500 focus:border-orange-500"
+                                rows="3"
+                                required
+                            />
+                            
+                            <button
+                                type="submit"
+                                className="w-full bg-orange-500 hover:bg-orange-600 text-white py-3 rounded-md font-semibold"
+                            >
+                                Create Account
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            );
+        };
+
+        // Main App
+        const App = () => {
+            return (
+                <BrowserRouter>
+                    <AuthProvider>
+                        <CartProvider>
+                            <div className="min-h-screen bg-gray-50">
+                                <Header />
+                                <Routes>
+                                    <Route path="/" element={<Home />} />
+                                    <Route path="/menu" element={<Menu />} />
+                                    <Route path="/cart" element={<Cart />} />
+                                    <Route path="/login" element={<Login />} />
+                                    <Route path="/register" element={<Register />} />
+                                </Routes>
+                            </div>
+                        </CartProvider>
+                    </AuthProvider>
+                </BrowserRouter>
+            );
+        };
+
+        // Render the app
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
