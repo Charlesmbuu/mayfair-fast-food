@@ -1,3 +1,61 @@
+# 🍔 May Fair Fast Food - Complete Delivery System
+
+A full-stack food ordering and delivery system for **May Fair Fast Food** located at **Manyanja Road, Nairobi**. Built with modern web technologies and ready for production deployment.
+
+## 🚀 Live Demo
+
+- **Frontend**: http://localhost:3000
+- **Backend API**: http://localhost:5000
+
+## 📋 Features
+
+### Customer Features
+- ✅ User registration and authentication
+- ✅ Browse menu with categories (Burgers, Chicken, Pizza, Sides, Drinks)
+- ✅ Add items to cart with quantity control
+- ✅ Secure checkout process
+- ✅ Order tracking with real-time status
+- ✅ Order history
+- ✅ Responsive mobile-friendly design
+
+### Admin Features
+- ✅ Admin dashboard with analytics
+- ✅ Order management system
+- ✅ Menu management
+- ✅ Customer management
+- ✅ Sales reporting
+
+## 🛠️ Technology Stack
+
+**Frontend:**
+- React.js 18 with Hooks
+- Tailwind CSS for styling
+- React Router for navigation
+- Context API for state management
+- Axios for API calls
+
+**Backend:**
+- Node.js with Express.js
+- JWT authentication
+- bcrypt for password hashing
+- JSON file database (no MongoDB required)
+- CORS enabled
+
+## 🏃‍♂️ Quick Start
+
+### Prerequisites
+- Node.js 14+ 
+- npm or yarn
+
+### Installation
+
+1. **Clone the repository**
+```bash
+git clone https://github.com/YOUR_USERNAME/mayfair-fast-food.git
+cd mayfair-fast-food
+
+---
+
 # **REVENUE STRATEGY: SCALING TO "CRAZY MASSIVE INCOME!!!"**
 
 ## **Executive Summary**
