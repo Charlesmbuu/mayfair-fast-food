@@ -53,6 +53,7 @@ A full-stack food ordering and delivery system for **May Fair Fast Food** locate
 ```bash
 git clone https://github.com/YOUR_USERNAME/mayfair-fast-food.git
 cd mayfair-fast-food
+```
 
 ---
 
