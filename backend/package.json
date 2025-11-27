@@ -2,10 +2,10 @@
   "name": "mayfair-backend",
   "version": "1.0.0",
   "description": "Backend for May Fair Fast Food",
-  "main": "server.js",
+  "main": "simple-server.js",
   "scripts": {
-    "start": "node server.js",
-    "dev": "nodemon server.js",
+    "start": "node simple-server.js",
+    "dev": "nodemon simple-server.js",
     "seed": "node scripts/seedDatabase.js"
   },
   "dependencies": {

@@ -55,6 +55,20 @@ git clone https://github.com/YOUR_USERNAME/mayfair-fast-food.git
 cd mayfair-fast-food
 ```
 
+### 1. Install backend dependencies
+cd backend && npm install
+
+### 2. Install frontend dependencies  
+cd ../frontend && npm install
+
+### 3. Seed the database
+cd ../backend && npm run seed
+
+### 4. Start the backend (Terminal 1)
+npm start
+
+### 5. Start the frontend (Terminal 2)  
+cd ../frontend && npm start
 ---
 
 # **REVENUE STRATEGY: SCALING TO "CRAZY MASSIVE INCOME!!!"**
